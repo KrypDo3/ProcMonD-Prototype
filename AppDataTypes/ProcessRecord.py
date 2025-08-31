@@ -13,17 +13,19 @@
 #  see <https://www.gnu.org/licenses/>.
 #
 
+from __future__ import annotations
+
 from hashlib import sha256
 from logging import error, warning
 from pathlib import Path
-
-import procmond
+from typing import Dict
 
 
 class ProcessRecord:
     """
     The ProcessRecord class encapsulates the metadata for an individual running process.
     """
+
     pid: int
     ppid: int
     file_path: str
@@ -31,7 +33,7 @@ class ProcessRecord:
     valid: bool
     accessible: bool
 
-    def __init__(self, pid):
+    def __init__(self, pid: int) -> None:
         """
         Creates a new ProcessRecord to encapsulate the metadata for an individual running process.
         :type pid: The ID of the process
@@ -45,23 +47,24 @@ class ProcessRecord:
         self.__path = ""
 
     @property
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, object]:
         """
 
         :return:
         """
-        return {'pid':        self.pid,
-                'ppid':       self.ppid,
-                'name':       self.name,
-                'path':       self.path,
-                'hash':       self.hash,
-                'exists':     self.exists,
-                'valid':      self.valid,
-                'accessible': self.accessible
-                }
+        return {
+            "pid": self.pid,
+            "ppid": self.ppid,
+            "name": self.name,
+            "path": self.path,
+            "hash": self.hash,
+            "exists": self.exists,
+            "valid": self.valid,
+            "accessible": self.accessible,
+        }
 
     @property
-    def path(self):
+    def path(self) -> str:
         """
 
         :return:
@@ -69,7 +72,7 @@ class ProcessRecord:
         return self.__path
 
     @path.setter
-    def path(self, file_path):
+    def path(self, file_path: str) -> None:
         if file_path == "/" or not file_path:
             self.valid = False
         else:
@@ -77,7 +80,7 @@ class ProcessRecord:
         self.__path = file_path
 
     @property
-    def hash(self):
+    def hash(self) -> str:
         """
 
         :return:
@@ -86,12 +89,25 @@ class ProcessRecord:
         if not self.exists:
             return file_hash
         try:
+            # lazily import config to avoid circular imports; fall back to a sensible default
+            try:
+                import sys
+
+                pm = sys.modules.get("procmond")
+                if pm is not None and hasattr(pm, "config"):
+                    _config = pm.config
+                    _buf = getattr(_config, "hash_buffer_size", 1024)
+                else:
+                    _buf = 1024
+            except Exception:
+                _buf = 1024
+
             with open(self.path, "rb") as f:
                 hasher = sha256()
-                r = f.read(procmond.config.hash_buffer_size)
+                r = f.read(_buf)
                 while r:
                     hasher.update(r)
-                    r = f.read(procmond.config.hash_buffer_size)
+                    r = f.read(_buf)
                 file_hash = hasher.hexdigest()
                 self.valid = True
                 self.accessible = True
@@ -100,14 +116,16 @@ class ProcessRecord:
                 self.valid = False
             self.accessible = False
         except PermissionError:
-            warning(f"{self.name} ({self.pid}) executable file exists, but we don't have access.")
+            warning(
+                f"{self.name} ({self.pid}) executable file exists, but we don't have access."
+            )
             self.accessible = False
             self.valid = True
         finally:
             return file_hash
 
     @property
-    def exists(self):
+    def exists(self) -> bool:
         """
 
         :return:
@@ -118,8 +136,10 @@ class ProcessRecord:
             return Path(self.path).exists()
         except PermissionError:
             self.accessible = False
-            error(f"Process '{self.name} executable file exists, but we don't have access.")
+            error(
+                f"Process '{self.name} executable file exists, but we don't have access."
+            )
             return False
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name} ({self.pid})"

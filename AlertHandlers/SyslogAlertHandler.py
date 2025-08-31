@@ -13,32 +13,41 @@
 #  see <https://www.gnu.org/licenses/>.
 #
 
-try:
-    from syslog import LOG_DAEMON, LOG_WARNING, openlog, syslog
-except Exception:
+import importlib
+from typing import Iterable, Optional
+
+_syslog = importlib.util.find_spec("syslog")
+if _syslog is not None:
+    import syslog as _syslog_mod
+
+    LOG_DAEMON = getattr(_syslog_mod, "LOG_DAEMON", None)
+    LOG_WARNING = getattr(_syslog_mod, "LOG_WARNING", None)
+    openlog = getattr(_syslog_mod, "openlog")
+    syslog = getattr(_syslog_mod, "syslog")
+else:
     # On non-Unix platforms (Windows) the 'syslog' module is not available.
     # Provide a minimal fallback that logs via the standard logging module.
     import logging
 
-    LOG_DAEMON = None
-    LOG_WARNING = logging.WARNING
+    LOG_DAEMON: Optional[int] = None
+    LOG_WARNING: int = logging.WARNING
 
-    def openlog(ident="ProcMonD", facility=None):
+    def openlog(ident: str = "ProcMonD", facility: object | None = None) -> None:
         # Configure a logger for fallback syslog behavior.
-        logger = logging.getLogger('ProcMonD')
+        logger = logging.getLogger("ProcMonD")
         if not logger.handlers:
             handler = logging.StreamHandler()
-            formatter = logging.Formatter('%(asctime)s [%(levelname)s]: %(message)s')
+            formatter = logging.Formatter("%(asctime)s [%(levelname)s]: %(message)s")
             handler.setFormatter(formatter)
             logger.addHandler(handler)
         logger.setLevel(logging.INFO)
 
-    def syslog(level, message):
-        logger = logging.getLogger('ProcMonD')
+    def syslog(level: int | object, message: str) -> None:
+        logger = logging.getLogger("ProcMonD")
         logger.log(level if isinstance(level, int) else logging.INFO, message)
 
 
-def syslog_alert_handler(alerts):
+def syslog_alert_handler(alerts: Iterable[object]) -> None:
     """
     Log each alert to the System Logging facility.
     :param alerts: A List of Alert objects representing each alert to be processed.

@@ -17,7 +17,7 @@
 
 from datetime import datetime
 from logging import basicConfig, debug, fatal, info, warning
-from sqlite3 import connect, OperationalError
+from sqlite3 import OperationalError, connect
 from time import sleep
 
 try:
@@ -41,7 +41,9 @@ except Exception:
 
         def close(self):
             return None
-from psutil import AccessDenied, process_iter, ZombieProcess
+
+
+from psutil import AccessDenied, ZombieProcess, process_iter
 
 import Detectors
 from AppDataTypes.ProcessRecord import ProcessRecord
@@ -57,8 +59,11 @@ def main():
     """
     global daemon_ctx
 
-    basicConfig(format=config.log_message_format, datefmt=config.log_message_datefmt,
-                level=config.numeric_log_level)
+    basicConfig(
+        format=config.log_message_format,
+        datefmt=config.log_message_datefmt,
+        level=config.numeric_log_level,
+    )
     with open(config.log_file, "w") as out_log:
         daemon_ctx.detach_process = False
         daemon_ctx.stderr = out_log
@@ -128,37 +133,50 @@ def store_records(process_records):
             cur = conn.cursor()
             # Create the database if it doesn't already exist.
             cur.execute(
-                'CREATE TABLE IF NOT EXISTS processes '
-                '(id INTEGER, ppid INTEGER, updated_at DATETIME, name VARCHAR, path VARCHAR, '
+                "CREATE TABLE IF NOT EXISTS processes "
+                "(id INTEGER, ppid INTEGER, updated_at DATETIME, name VARCHAR, path VARCHAR, "
                 'valid BIT, "hash" VARCHAR, accessible BIT, file_exists BIT, '
-                'CONSTRAINT processes_pk PRIMARY KEY (id, updated_at));'
+                "CONSTRAINT processes_pk PRIMARY KEY (id, updated_at));"
             )
-            cur.execute('CREATE INDEX IF NOT EXISTS processes_name_hash_index ON processes (name DESC, hash DESC);')
-            cur.execute('CREATE INDEX IF NOT EXISTS processes_updated_at_index ON processes(updated_at DESC);')
             cur.execute(
-                'CREATE INDEX IF NOT EXISTS processes_file_exists_accessible_updated_at_index ON processes ('
-                'file_exists, '
-                'accessible, updated_at);')
-            cur.execute("CREATE INDEX IF NOT EXISTS processes_id_path_hash_index ON processes (id, path, hash);")
+                "CREATE INDEX IF NOT EXISTS processes_name_hash_index ON processes (name DESC, hash DESC);"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS processes_updated_at_index ON processes(updated_at DESC);"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS processes_file_exists_accessible_updated_at_index ON processes ("
+                "file_exists, "
+                "accessible, updated_at);"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS processes_id_path_hash_index ON processes (id, path, hash);"
+            )
             conn.commit()
 
             # Now insert the new record.
             timestamp = datetime.now()
-            insert_sql = "INSERT INTO processes (id, ppid, updated_at, name , path , valid , hash , accessible, " \
-                         "file_exists) " \
-                         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            insert_sql = (
+                "INSERT INTO processes (id, ppid, updated_at, name , path , valid , hash , accessible, "
+                "file_exists) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            )
             for p in process_records:
                 if p.valid:
-                    cur.execute(insert_sql, (p.pid,
-                                             p.ppid,
-                                             timestamp,
-                                             p.name,
-                                             p.path,
-                                             p.valid,
-                                             p.hash,
-                                             p.accessible,
-                                             p.exists)
-                                )
+                    cur.execute(
+                        insert_sql,
+                        (
+                            p.pid,
+                            p.ppid,
+                            timestamp,
+                            p.name,
+                            p.path,
+                            p.valid,
+                            p.hash,
+                            p.accessible,
+                            p.exists,
+                        ),
+                    )
             conn.commit()
     except OperationalError:
         fatal(f"Cannot write to database file {config.database_path}")
@@ -186,14 +204,17 @@ def action_alerts(alerts):
     """
     if config.alert_to_syslog:
         from AlertHandlers.SyslogAlertHandler import syslog_alert_handler
+
         syslog_alert_handler(alerts)
 
     if config.alert_to_email:
         from AlertHandlers.EmailAlertHandler import email_alert_handler
+
         email_alert_handler(alerts)
 
     if config.alert_to_webhook:
         from AlertHandlers.WebHookAlertHandler import webhook_alert_handler
+
         webhook_alert_handler(alerts)
 
 

@@ -16,7 +16,6 @@
 from sqlite3 import connect
 
 from AppDataTypes.Alert import Alert
-from procmond import config
 
 
 def detect_process_without_exe():
@@ -25,6 +24,9 @@ def detect_process_without_exe():
     :rtype: List[Alert]
     :return: A List of Alerts for each process that has no associated executable
     """
+    # import config lazily to avoid circular import when procmond initializes
+    from procmond import config
+
     result = []
     with connect(config.database_path) as conn:
         cur = conn.cursor()
@@ -38,8 +40,12 @@ def detect_process_without_exe():
         cur.execute(sql)
         for record in cur:
             pid, updated_at, name, file_path, file_exists = record
-            alert = Alert(pid=pid, name=name, path=file_path,
-                          message="Process does not have executable on disk.")
+            alert = Alert(
+                pid=pid,
+                name=name,
+                path=file_path,
+                message="Process does not have executable on disk.",
+            )
             result.append(alert)
     return result
 
@@ -53,6 +59,9 @@ def detect_process_with_duplicate_name():
     :rtype: List[Alert]
     :return: A List of Alerts for each process that has no associated executable
     """
+    # import config lazily to avoid circular import when procmond initializes
+    from procmond import config
+
     result = []
     with connect(config.database_path) as conn:
         cur = conn.cursor()
@@ -73,8 +82,12 @@ def detect_process_with_duplicate_name():
         cur.execute(sql)
         for record in cur:
             pid, updated_at, name, file_path, distinct_paths = record
-            alert = Alert(pid=pid, name=name, path=file_path,
-                          message=f"{distinct_paths} processes exist with the same name, but different paths.")
+            alert = Alert(
+                pid=pid,
+                name=name,
+                path=file_path,
+                message=f"{distinct_paths} processes exist with the same name, but different paths.",
+            )
             result.append(alert)
     return result
 
@@ -85,6 +98,9 @@ def detect_process_with_hash_change():
     :rtype: List[Alert]
     :return: A List of Alerts for each process that has no associated executable
     """
+    # import config lazily to avoid circular import when procmond initializes
+    from procmond import config
+
     result = []
     with connect(config.database_path) as conn:
         cur = conn.cursor()
@@ -106,7 +122,11 @@ def detect_process_with_hash_change():
         cur.execute(sql)
         for record in cur:
             pid, updated_at, name, file_path, file_exists = record
-            alert = Alert(pid=pid, name=name, path=file_path,
-                          message="Process executable has been modified on disk while the process was running.")
+            alert = Alert(
+                pid=pid,
+                name=name,
+                path=file_path,
+                message="Process executable has been modified on disk while the process was running.",
+            )
             result.append(alert)
     return result

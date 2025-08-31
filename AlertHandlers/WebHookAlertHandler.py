@@ -13,14 +13,17 @@
 #  see <https://www.gnu.org/licenses/>.
 #
 
+from __future__ import annotations
+
 from logging import error
+from typing import Iterable
 
 from requests import post
 
 from procmond import config
 
 
-def webhook_alert_handler(alerts):
+def webhook_alert_handler(alerts: Iterable[object]) -> None:
     """
     Sends a message to a web server containing each alert via HTTP POST.
     :param alerts: A List of Alert objects representing each alert to be processed.
@@ -28,7 +31,10 @@ def webhook_alert_handler(alerts):
     message_text = ""
     for alert in alerts:
         message_text += f"{alert}\n"
-    data = {'text': message_text}
-    response = post(config.webhook_address, json=data)
+    data = {"text": message_text}
+    # include a short timeout to avoid blocking the daemon
+    response = post(config.webhook_address, json=data, timeout=5)
     if response.status_code != 200:
-        error(f'Request to webhook returned an error {response.status_code}, the response is:\n\t{response.text}')
+        error(
+            f"Request to webhook returned an error {response.status_code}, the response is:\n\t{response.text}"
+        )

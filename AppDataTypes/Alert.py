@@ -13,16 +13,21 @@
 #  see <https://www.gnu.org/licenses/>.
 #
 
+
+from __future__ import annotations
+
+
 class Alert:
     """
     The Alert class encapsulates the metadata for a suspicious event.
     """
+
     message: str
     path: str
     name: str
     pid: int
 
-    def __init__(self, pid=0, name="", path="", message=""):
+    def __init__(self, pid: int = 0, name: str = "", path: str = "", message: str = "") -> None:
         """
         Creates a new Alert object that represents a detected suspicious event.
         :param pid: The ID of the suspicious process.
@@ -35,5 +40,5 @@ class Alert:
         self.path = path
         self.message = message
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}({self.pid}) {self.message}"

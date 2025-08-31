@@ -29,20 +29,33 @@ def email_alert_handler(alerts):
     for alert in alerts:
         message_text += f"{alert}\n"
     msg = EmailMessage()
-    msg['Subject'] = f"ProcMonD - {config.email_config['subject_prefix']} - Suspicious Process Alerts"
-    msg['From'] = config.email_config['sender_address']
-    msg['To'] = config.email_config['destination_address']
+    msg["Subject"] = (
+        f"ProcMonD - {config.email_config['subject_prefix']} - Suspicious Process Alerts"
+    )
+    msg["From"] = config.email_config["sender_address"]
+    msg["To"] = config.email_config["destination_address"]
     msg.set_content(message_text)
 
     try:
-        if config.email_config['smtp_server_use_ssl']:
-            s = SMTP_SSL(host=config.email_config['smtp_server_address'], port=config.email_config['smtp_server_port'])
+        if config.email_config["smtp_server_use_ssl"]:
+            s = SMTP_SSL(
+                host=config.email_config["smtp_server_address"],
+                port=config.email_config["smtp_server_port"],
+            )
         else:
-            s = SMTP(host=config.email_config['smtp_server_address'], port=config.email_config['smtp_server_port'])
+            s = SMTP(
+                host=config.email_config["smtp_server_address"],
+                port=config.email_config["smtp_server_port"],
+            )
 
-        if config.email_config['smtp_server_username'] and config.email_config['smtp_server_password']:
-            s.login(user=config.email_config['smtp_server_username'],
-                    password=config.email_config['smtp_server_password'])
+        if (
+            config.email_config["smtp_server_username"]
+            and config.email_config["smtp_server_password"]
+        ):
+            s.login(
+                user=config.email_config["smtp_server_username"],
+                password=config.email_config["smtp_server_password"],
+            )
         s.send_message(msg)
         s.quit()
     except ConnectionRefusedError:

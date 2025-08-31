@@ -296,3 +296,4 @@ $RECYCLE.BIN/
 # End of https://www.gitignore.io/api/linux,macos,python,windows,jetbrains+all,visualstudiocode
 procmond.db
 .vscode/settings.json
+pyright-baseline.json
