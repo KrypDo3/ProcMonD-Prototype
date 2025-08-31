@@ -20,7 +20,27 @@ from logging import basicConfig, debug, fatal, info, warning
 from sqlite3 import connect, OperationalError
 from time import sleep
 
-from daemon import DaemonContext
+try:
+    from daemon import DaemonContext
+except Exception:
+    # The 'python-daemon' package imports Unix-only modules (like 'pwd') at import time.
+    # Provide a minimal, no-op fallback DaemonContext for non-Unix platforms (Windows)
+    # so the program can run without requiring the full daemon behavior.
+    class DaemonContext:
+        def __init__(self):
+            self.detach_process = False
+            self.stderr = None
+            self.working_directory = None
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            # Returning False will not suppress exceptions.
+            return False
+
+        def close(self):
+            return None
 from psutil import AccessDenied, process_iter, ZombieProcess
 
 import Detectors

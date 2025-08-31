@@ -13,7 +13,29 @@
 #  see <https://www.gnu.org/licenses/>.
 #
 
-from syslog import LOG_DAEMON, LOG_WARNING, openlog, syslog
+try:
+    from syslog import LOG_DAEMON, LOG_WARNING, openlog, syslog
+except Exception:
+    # On non-Unix platforms (Windows) the 'syslog' module is not available.
+    # Provide a minimal fallback that logs via the standard logging module.
+    import logging
+
+    LOG_DAEMON = None
+    LOG_WARNING = logging.WARNING
+
+    def openlog(ident="ProcMonD", facility=None):
+        # Configure a logger for fallback syslog behavior.
+        logger = logging.getLogger('ProcMonD')
+        if not logger.handlers:
+            handler = logging.StreamHandler()
+            formatter = logging.Formatter('%(asctime)s [%(levelname)s]: %(message)s')
+            handler.setFormatter(formatter)
+            logger.addHandler(handler)
+        logger.setLevel(logging.INFO)
+
+    def syslog(level, message):
+        logger = logging.getLogger('ProcMonD')
+        logger.log(level if isinstance(level, int) else logging.INFO, message)
 
 
 def syslog_alert_handler(alerts):
