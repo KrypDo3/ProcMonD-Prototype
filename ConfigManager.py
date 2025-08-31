@@ -79,50 +79,24 @@ class ConfigManager:
         self.root_path = config["GENERAL"].get("RootPath", self.root_path)
         self.database_path = config["GENERAL"].get("DatabasePath", self.database_path)
         self.refresh_rate = config["GENERAL"].getint("RefreshRate", self.refresh_rate)
-        self.hash_buffer_size = config["GENERAL"].getint(
-            "HashBufferSize", self.hash_buffer_size
-        )
-        self.logging_level = config["GENERAL"].get(
-            "ApplicationLoggingLevel", self.logging_level
-        )
+        self.hash_buffer_size = config["GENERAL"].getint("HashBufferSize", self.hash_buffer_size)
+        self.logging_level = config["GENERAL"].get("ApplicationLoggingLevel", self.logging_level)
         self.log_file = config["GENERAL"].get("LogFile", self.log_file)
 
-        self.alert_to_syslog = config["ALERT_PROVIDERS"].getboolean(
-            "AlertToSyslog", self.alert_to_syslog
-        )
-        self.alert_to_email = config["ALERT_PROVIDERS"].getboolean(
-            "AlertToEmail", self.alert_to_email
-        )
-        self.alert_to_webhook = config["ALERT_PROVIDERS"].getboolean(
-            "AlertToWebHook", self.alert_to_webhook
-        )
+        self.alert_to_syslog = config["ALERT_PROVIDERS"].getboolean("AlertToSyslog", self.alert_to_syslog)
+        self.alert_to_email = config["ALERT_PROVIDERS"].getboolean("AlertToEmail", self.alert_to_email)
+        self.alert_to_webhook = config["ALERT_PROVIDERS"].getboolean("AlertToWebHook", self.alert_to_webhook)
 
         if self.alert_to_email and config.has_section("EMAIL_CONFIG"):
             email_section = config["EMAIL_CONFIG"]
-            self.email_config["subject_prefix"] = email_section.get(
-                "SubjectPrefix", get_system_hostname()
-            )
-            self.email_config["smtp_server_address"] = email_section.get(
-                "SMTPServerAddress", "localhost"
-            )
-            self.email_config["smtp_server_port"] = email_section.getint(
-                "SMTPServerPort", 25
-            )
-            self.email_config["smtp_server_username"] = email_section.get(
-                "SMTPServerUsername", ""
-            )
-            self.email_config["smtp_server_password"] = email_section.get(
-                "SMTPServerPassword", ""
-            )
-            self.email_config["sender_address"] = email_section.get(
-                "SenderAddress", "root@localhost"
-            )
-            self.email_config["destination_address"] = email_section.get(
-                "DestinationAddress", "root@localhost"
-            )
-            self.email_config["smtp_server_use_ssl"] = email_section.getboolean(
-                "UseSSL", False
-            )
+            self.email_config["subject_prefix"] = email_section.get("SubjectPrefix", get_system_hostname())
+            self.email_config["smtp_server_address"] = email_section.get("SMTPServerAddress", "localhost")
+            self.email_config["smtp_server_port"] = email_section.getint("SMTPServerPort", 25)
+            self.email_config["smtp_server_username"] = email_section.get("SMTPServerUsername", "")
+            self.email_config["smtp_server_password"] = email_section.get("SMTPServerPassword", "")
+            self.email_config["sender_address"] = email_section.get("SenderAddress", "root@localhost")
+            self.email_config["destination_address"] = email_section.get("DestinationAddress", "root@localhost")
+            self.email_config["smtp_server_use_ssl"] = email_section.getboolean("UseSSL", False)
         if self.alert_to_webhook and config.has_section("WEBHOOK_CONFIG"):
             webhook_section = config["WEBHOOK_CONFIG"]
             self.webhook_address = webhook_section.get("EndpointURL", "")

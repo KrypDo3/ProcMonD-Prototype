@@ -35,6 +35,4 @@ def webhook_alert_handler(alerts: Iterable[object]) -> None:
     # include a short timeout to avoid blocking the daemon
     response = post(config.webhook_address, json=data, timeout=5)
     if response.status_code != 200:
-        error(
-            f"Request to webhook returned an error {response.status_code}, the response is:\n\t{response.text}"
-        )
+        error(f"Request to webhook returned an error {response.status_code}, the response is:\n\t{response.text}")

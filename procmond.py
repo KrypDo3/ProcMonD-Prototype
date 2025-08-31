@@ -138,20 +138,14 @@ def store_records(process_records):
                 'valid BIT, "hash" VARCHAR, accessible BIT, file_exists BIT, '
                 "CONSTRAINT processes_pk PRIMARY KEY (id, updated_at));"
             )
-            cur.execute(
-                "CREATE INDEX IF NOT EXISTS processes_name_hash_index ON processes (name DESC, hash DESC);"
-            )
-            cur.execute(
-                "CREATE INDEX IF NOT EXISTS processes_updated_at_index ON processes(updated_at DESC);"
-            )
+            cur.execute("CREATE INDEX IF NOT EXISTS processes_name_hash_index ON processes (name DESC, hash DESC);")
+            cur.execute("CREATE INDEX IF NOT EXISTS processes_updated_at_index ON processes(updated_at DESC);")
             cur.execute(
                 "CREATE INDEX IF NOT EXISTS processes_file_exists_accessible_updated_at_index ON processes ("
                 "file_exists, "
                 "accessible, updated_at);"
             )
-            cur.execute(
-                "CREATE INDEX IF NOT EXISTS processes_id_path_hash_index ON processes (id, path, hash);"
-            )
+            cur.execute("CREATE INDEX IF NOT EXISTS processes_id_path_hash_index ON processes (id, path, hash);")
             conn.commit()
 
             # Now insert the new record.

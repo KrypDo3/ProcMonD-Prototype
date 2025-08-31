@@ -1,10 +1,17 @@
 {
-  "typeCheckingMode": "basic",
-  "exclude": ["**/.venv", "**/procmond.db", "**/procmond.log", "AlertHandlers/**", "tests/**", "run_smoke.py"],
-  "executionEnvironments": [
-    {
-      "root": ".",
-      "pythonVersion": "3.11"
-    }
-  ]
+    "typeCheckingMode": "basic",
+    "exclude": [
+        "**/.venv",
+        "**/procmond.db",
+        "**/procmond.log",
+        "AlertHandlers/**",
+        "tests/**",
+        "run_smoke.py"
+    ],
+    "executionEnvironments": [
+        {
+            "root": ".",
+            "pythonVersion": "3.11"
+        }
+    ]
 }

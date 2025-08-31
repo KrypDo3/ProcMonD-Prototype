@@ -116,9 +116,7 @@ class ProcessRecord:
                 self.valid = False
             self.accessible = False
         except PermissionError:
-            warning(
-                f"{self.name} ({self.pid}) executable file exists, but we don't have access."
-            )
+            warning(f"{self.name} ({self.pid}) executable file exists, but we don't have access.")
             self.accessible = False
             self.valid = True
         finally:
@@ -136,9 +134,7 @@ class ProcessRecord:
             return Path(self.path).exists()
         except PermissionError:
             self.accessible = False
-            error(
-                f"Process '{self.name} executable file exists, but we don't have access."
-            )
+            error(f"Process '{self.name} executable file exists, but we don't have access.")
             return False
 
     def __str__(self) -> str:
