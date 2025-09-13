@@ -1,0 +1,64 @@
+---
+globs: *.py
+---
+
+# Python Coding Standards for ProcMonD
+
+## Code Style
+
+- **Line Length**: 140 characters (configured in [pyproject.toml](mdc:pyproject.toml))
+- **Indentation**: 4 spaces (configured in [.editorconfig](mdc:.editorconfig))
+- **Import Style**: Use `isort` with black profile
+- **Linting**: Use `ruff` with configured rules (E, F, W, C90, ANN, S, RET, I)
+
+## Type Hints
+
+- Use type hints for all function parameters and return values
+- Use `from __future__ import annotations` for forward references
+- Example from [ProcessRecord.py](mdc:AppDataTypes/ProcessRecord.py):
+
+  ```python
+  def __init__(self, pid: int) -> None:
+  def to_dict(self) -> Dict[str, object]:
+  ```
+
+## Error Handling
+
+- Use specific exception types, not bare `except:`
+- Log errors with appropriate levels (warning, error, fatal)
+- Graceful degradation for platform-specific features
+- Example from [procmond.py](mdc:procmond.py):
+
+  ```python
+  except AccessDenied:
+      warning(f"{proc} is not an accessible process.")
+      proc.valid = False
+  ```
+
+## Documentation
+
+- Use docstrings for all public functions and classes
+- Include parameter types and return types in docstrings
+- Follow the existing pattern: `:param name: Description` and `:return: Description`
+
+## Database Operations
+
+- Always use context managers for database connections
+- Use parameterized queries to prevent SQL injection
+- Example from [Detectors.py](mdc:Detectors.py):
+
+  ```python
+  with connect(config.database_path) as conn:
+      cur = conn.cursor()
+      cur.execute(sql, parameters)
+  ```
+
+## Configuration
+
+- Use lazy imports to avoid circular dependencies
+- Access config through the global `config` object from [procmond.py](mdc:procmond.py)
+- Example pattern:
+
+  ```python
+  from procmond import config
+  ```
