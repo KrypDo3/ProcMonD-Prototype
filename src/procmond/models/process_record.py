@@ -1,30 +1,26 @@
+"""Process record model for ProcMonD.
+
+This module defines the ProcessRecord class which encapsulates metadata
+for individual running processes.
+"""
+
 #  ProcMonD-Prototype - A simple daemon for monitoring running processes for suspicious behavior.
-#  Copyright (C) 2019  Krystal Melton
-#
-#  This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
-#  License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
-#  later version.
-#
-#  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
-#  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
-#  details.
-#
-#  You should have received a copy of the GNU General Public License along with this program.  If not,
-#  see <https://www.gnu.org/licenses/>.
-#
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2019 Krystal Melton
 
 from __future__ import annotations
 
+import sys
 from hashlib import sha256
-from logging import error, warning
+from logging import getLogger
 from pathlib import Path
-from typing import Dict
+from typing import Any
+
+logger = getLogger(__name__)
 
 
 class ProcessRecord:
-    """
-    The ProcessRecord class encapsulates the metadata for an individual running process.
-    """
+    """The ProcessRecord class encapsulates the metadata for an individual running process."""
 
     pid: int
     ppid: int
@@ -34,9 +30,9 @@ class ProcessRecord:
     accessible: bool
 
     def __init__(self, pid: int) -> None:
-        """
-        Creates a new ProcessRecord to encapsulate the metadata for an individual running process.
-        :type pid: The ID of the process
+        """Creates a new ProcessRecord to encapsulate the metadata for an individual running process.
+
+        :param pid: The ID of the process.
         """
         self.name = ""
         self.__path = ""
@@ -47,10 +43,10 @@ class ProcessRecord:
         self.__path = ""
 
     @property
-    def to_dict(self) -> Dict[str, object]:
-        """
+    def to_dict(self) -> dict[str, Any]:
+        """Return a dictionary representation of the process record.
 
-        :return:
+        :return: A dictionary containing all process record fields.
         """
         return {
             "pid": self.pid,
@@ -65,9 +61,9 @@ class ProcessRecord:
 
     @property
     def path(self) -> str:
-        """
+        """Get the process executable path.
 
-        :return:
+        :return: The path to the process executable.
         """
         return self.__path
 
@@ -81,9 +77,9 @@ class ProcessRecord:
 
     @property
     def hash(self) -> str:
-        """
+        """Calculate and return the SHA256 hash of the process executable.
 
-        :return:
+        :return: The SHA256 hash of the process executable file.
         """
         file_hash = ""
         if not self.exists:
@@ -91,18 +87,16 @@ class ProcessRecord:
         try:
             # lazily import config to avoid circular imports; fall back to a sensible default
             try:
-                import sys
-
                 pm = sys.modules.get("procmond")
                 if pm is not None and hasattr(pm, "config"):
                     _config = pm.config
                     _buf = getattr(_config, "hash_buffer_size", 1024)
                 else:
                     _buf = 1024
-            except Exception:
+            except (ImportError, AttributeError):
                 _buf = 1024
 
-            with open(self.path, "rb") as f:
+            with Path(self.path).open("rb") as f:
                 hasher = sha256()
                 r = f.read(_buf)
                 while r:
@@ -116,17 +110,20 @@ class ProcessRecord:
                 self.valid = False
             self.accessible = False
         except PermissionError:
-            warning(f"{self.name} ({self.pid}) executable file exists, but we don't have access.")
+            logger.warning(
+                "%s (%s) executable file exists, but we don't have access.",
+                self.name,
+                self.pid,
+            )
             self.accessible = False
             self.valid = True
-        finally:
-            return file_hash
+        return file_hash
 
     @property
     def exists(self) -> bool:
-        """
+        """Check if the process executable file exists on disk.
 
-        :return:
+        :return: True if the file exists, False otherwise.
         """
         if not self.path:
             return False
@@ -134,8 +131,15 @@ class ProcessRecord:
             return Path(self.path).exists()
         except PermissionError:
             self.accessible = False
-            error(f"Process '{self.name} executable file exists, but we don't have access.")
+            logger.exception(
+                "Process '%s' executable file exists, but we don't have access.",
+                self.name,
+            )
             return False
 
     def __str__(self) -> str:
+        """Return a string representation of the process record.
+
+        :return: A string representation of the process record.
+        """
         return f"{self.name} ({self.pid})"
