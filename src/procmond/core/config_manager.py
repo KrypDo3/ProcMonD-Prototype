@@ -1,37 +1,32 @@
+"""Configuration management for ProcMonD.
+
+This module handles loading and managing configuration settings
+from INI files and command line arguments.
+"""
+
 #  ProcMonD-Prototype - A simple daemon for monitoring running processes for suspicious behavior.
-#  Copyright (C) 2019 Krystal Melton
-#
-#  This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
-#  License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
-#  later version.
-#
-#  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
-#  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
-#  details.
-#
-#  You should have received a copy of the GNU General Public License along with this program.  If not,
-#  see <https://www.gnu.org/licenses/>.
-#
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2019 Krystal Melton
 
 import logging
 from argparse import ArgumentParser
 from configparser import ConfigParser, ExtendedInterpolation
 from pathlib import Path
+from socket import gethostname
+from typing import ClassVar
 
 
-def get_system_hostname():
-    """
-    Gets the local system's hostname.
+def get_system_hostname() -> str:
+    """Gets the local system's hostname.
+
     :return: The local hostname.
     """
-    from socket import gethostname
-
     return gethostname()
 
 
-def get_custom_config_path():
-    """
-    Gets a user provided configuration file path from command line arguments.
+def get_custom_config_path() -> str:
+    """Get a user provided configuration file path from command line arguments.
+
     :return: Any user-provided config file location.
     """
     parser = ArgumentParser()
@@ -39,15 +34,11 @@ def get_custom_config_path():
     # Use parse_known_args so test runners (pytest) or other wrappers with extra args
     # don't cause an immediate SystemExit on unknown arguments.
     args, _ = parser.parse_known_args()
-    result = args.config
-    return result
+    return args.config
 
 
 class ConfigManager:
-    """
-    The ConfigManager handles setting up configuration defaults and loading the application's configuration from an
-    INI-format file.
-    """
+    """The ConfigManager handles setting up configuration defaults and loading the application's configuration from an INI-format file."""  # noqa: E501
 
     root_path: str | Path = Path.cwd()
     database_path: str = "procmond.db"
@@ -56,16 +47,14 @@ class ConfigManager:
     alert_to_syslog: bool = True
     alert_to_email: bool = False
     alert_to_webhook: bool = False
-    email_config = dict()
+    email_config: ClassVar[dict[str, str | int | bool]] = {}
     logging_level: str = "INFO"
     log_file: str = "procmond.log"
     log_message_format: str = "%(asctime)s [%(levelname)s]: %(message)s"
     log_message_datefmt: str = "%m/%d/%Y %I:%M:%S %p"
 
-    def __init__(self):
-        """
-        Loads the application configuration from the config file.
-        """
+    def __init__(self) -> None:
+        """Loads the application configuration from the config file."""
         user_config_path = get_custom_config_path()
 
         config = ConfigParser(interpolation=ExtendedInterpolation())
@@ -102,11 +91,10 @@ class ConfigManager:
             self.webhook_address = webhook_section.get("EndpointURL", "")
 
     @property
-    def numeric_log_level(self):
-        """
-        Provides the configured logging level as an integer for use in the logging package.
-        """
+    def numeric_log_level(self) -> int:
+        """Provides the configured logging level as an integer for use in the logging package."""
         numeric_level = getattr(logging, self.logging_level.upper(), None)
         if not isinstance(numeric_level, int):
-            raise ValueError(f"Invalid log level: {self.logging_level}")
+            msg = f"Invalid log level: {self.logging_level}"
+            raise TypeError(msg)
         return numeric_level
