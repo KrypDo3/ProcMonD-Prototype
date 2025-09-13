@@ -1,0 +1,56 @@
+---
+globs: tests/*.py,test_*.py
+---
+
+# Testing Patterns for ProcMonD
+
+## Test Structure
+
+- Tests mirror the source structure in [tests/](mdc:tests/)
+- Use pytest as the test runner
+- Test files should be named `test_*.py`
+
+## Database Testing
+
+- Use temporary databases for testing (see [test_detectors.py](mdc:tests/test_detectors.py))
+- Create test data with helper functions like `create_test_db()`
+- Use `monkeypatch` to override configuration for tests
+- Example pattern:
+
+  ```python
+  def test_detect_process_without_exe(monkeypatch, tmp_path):
+      db = tmp_path / "test.db"
+      conn = create_test_db(str(db))
+      monkeypatch.setattr(procmond.config, "database_path", str(db))
+  ```
+
+## Test Data
+
+- Create realistic test data that matches the database schema
+- Use meaningful test values that reflect real-world scenarios
+- Test both positive and negative cases
+
+## Mocking and Patching
+
+- Use `monkeypatch` fixture for configuration overrides
+- Mock external dependencies (SMTP, syslog, etc.)
+- Test error conditions and edge cases
+
+## Test Organization
+
+- Group related tests in the same test file
+- Use descriptive test function names
+- Include assertions for both return types and values
+- Example from [test_detectors.py](mdc:tests/test_detectors.py):
+
+  ```python
+  assert isinstance(result, list)
+  assert len(result) == 1
+  assert isinstance(result[0], Alert)
+  ```
+
+## Running Tests
+
+- Use `just test` or `just ci-check` commands
+- Ensure all tests pass before committing
+- Fix any linting errors in test files
