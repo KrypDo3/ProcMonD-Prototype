@@ -72,6 +72,7 @@ import win32event
 import subprocess
 import sys
 
+
 class ProcMonDService(win32serviceutil.ServiceFramework):
     _svc_name_ = "ProcMonD"
     _svc_display_name_ = "ProcMonD process tripwire"
@@ -90,11 +91,14 @@ class ProcMonDService(win32serviceutil.ServiceFramework):
     def SvcDoRun(self):
         # Launch ProcMonD under the active virtualenv Python
         python = r"C:\opt\procmond\.venv\Scripts\python.exe"
-        self.proc = subprocess.Popen([python, r"C:\opt\procmond\procmond.py"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        self.proc = subprocess.Popen(
+            [python, r"C:\opt\procmond\procmond.py"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
         servicemanager.LogMsg(servicemanager.EVENTLOG_INFORMATION_TYPE, 0, ("ProcMonD service started", ""))
         win32event.WaitForSingleObject(self.hWaitStop, win32event.INFINITE)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     win32serviceutil.HandleCommandLine(ProcMonDService)
 ```
 
