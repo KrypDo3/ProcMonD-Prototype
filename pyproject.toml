@@ -2,22 +2,159 @@
 name = "procmond-prototype"
 version = "0.1.0"
 description = "Prototype process monitoring daemon"
-requires-python = ">=3.10"
+authors = [{ name = "UncleSp1d3r", email = "support@evilbitlabs.io" }]
+license = "GPL-3.0"
+readme = "README.md"
+keywords = ["process", "monitoring", "daemon"]
+requires-python = ">=3.12"
+dependencies = [
+    "psutil>=5.9.0",
+    "python-daemon>=3.1.2",
+    "requests>=2.32.5",
+    "rich>=14.1.0",
+]
 
-[tool.ruff]
-line-length = 140
-select = ["E", "F", "W", "C90", "ANN", "S", "RET"]
-extend-select = ["I"]
-ignore = ["E203"]
-# Keep autofixes enabled for safe rules during local dev
-fix = true
+[project.scripts]
+procmond = "procmond.cli:main"
+procmond-smoke = "procmond.cli:smoke"
 
-[tool.ruff.per-file-ignores]
-"tests/*" = ["E501", "S101", "ANN"]
+[dependency-groups]
+ci = [
+    { include-group = "dev" },
+    "mdformat>=0.7.22",
+    "mdformat-admon>=2.1.1",
+    "mdformat-config>=0.2.1",
+    "mdformat-footnote>=0.1.1",
+    "mdformat-frontmatter>=2.0.8",
+    "mdformat-gfm>=0.4.1",
+    "mdformat-gfm-alerts>=2.0.0",
+    "mdformat-ruff>=0.1.3",
+    "mdformat-simple-breaks>=0.0.1",
+    "mdformat-tables>=1.0.0",
+    "mdformat-toc>=0.3.0",
+    "mdformat-web>=0.2.0",
+    "mdformat-wikilink>=0.2.0",
+]
+dev = ["basedpyright>=1.31.4", "pytest>=8.4.2", "ruff>=0.13.0", "uv>=0.8.17"]
 
-[tool.isort]
-profile = "black"
+[project.urls]
+repository = "https://github.com/KrypDo3/ProcMonD-Prototype"
+
 
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/procmond"]
+
+[tool.hatch.build.targets.sdist]
+packages = ["src/procmond"]
+
+[tool.hatch.build.sources]
+"src" = ""
+
+[tool.ruff]
+indent-width = 4
+target-version = "py312"
+line-length = 119
+fix = true
+include = [
+    "pyproject.toml",
+    "**/src/**/*.py",
+    "scripts/**/*.py",
+    "tests/**/*.py",
+]
+exclude = [
+    ".git",
+    ".basedpyright_cache",
+    ".ruff_cache",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "build",
+    "dist",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+docstring-code-format = true
+docstring-code-line-length = 20
+
+[tool.ruff.lint]
+select = [
+    "ALL", # include all the rules, including new ones
+]
+ignore = ["COM812"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "D",
+    "S",
+    "PT011",
+    "ARG001",
+    "ARG002",  # Unused method arguments (common in pytest fixtures)
+    "SLF001",
+    "ANN401",
+    "ANN001",  # Missing type annotation for function argument
+    "ANN202",  # Missing return type annotation for private function
+    "T201",
+    "PLR2004", #  doesn't much matter for tests
+    "B007",    # Loop control variable not used within loop body
+    "EM102",
+]
+"alembic/versions/**/*.py" = ["D"]
+"tests/conftest.py" = ["ARG001", "SLF001", "ANN401"]
+"tests/db/test_session.py" = ["SLF001"]
+"scripts/**/*.py" = ["T201"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.pyupgrade]
+# Preserve types, even if a file imports `from __future__ import annotations`.
+keep-runtime-typing = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.basedpyright]
+pythonVersion = "3.12"
+typeCheckingMode = "recommended"
+pythonPlatform = "any"
+ignore = ["tests/**"]
+allowedUntypedLibraries = ["psutil", "python-daemon", "requests"]
+reportUnannotatedClassAttribute = "hint"
+reportImplicitOverride = "hint"
+reportUnknownMemberType = "hint"
+reportUnknownVariableType = "hint"
+reportUnknownArgumentType = "hint"
+reportUnknownParameterType = "hint"
+reportUnsafeMultipleInheritance = "hint"
+reportExplicitAny = false
+reportAny = "hint"
+reportUnusedCallResult = "hint"
+reportUninitializedInstanceVariable = "hint"
+reportMissingTypeArgument = "hint"
+reportDeprecated = "hint"
+reportMissingTypeStubs = false
+reportPrivateLocalImportUsage = "hint"
+reportCallIssue = "hint"
+reportImportCycles = "hint"
+reportImplicitStringConcatenation = "none"
+reportUnusedParameter = "none"
+reportAssignmentType = "none"
+reportRedeclaration = "none"
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+tag_format = "$version"
+version_scheme = "semver"
+version_provider = "uv"
+update_changelog_on_bump = true
+major_version_zero = true
+changelog_file = "CHANGELOG.md"
+changelog_merge_prerelease = true
