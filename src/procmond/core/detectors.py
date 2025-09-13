@@ -1,31 +1,27 @@
+"""Detection algorithms for ProcMonD.
+
+This module contains functions that detect suspicious process behavior
+by analyzing the process database.
+"""
+
 #  ProcMonD-Prototype - A simple daemon for monitoring running processes for suspicious behavior.
-#  Copyright (C) 2019  Krystal Melton
-#
-#  This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
-#  License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
-#  later version.
-#
-#  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
-#  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
-#  details.
-#
-#  You should have received a copy of the GNU General Public License along with this program.  If not,
-#  see <https://www.gnu.org/licenses/>.
-#
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2019 Krystal Melton
+
+from __future__ import annotations
 
 from sqlite3 import connect
 
-from AppDataTypes.Alert import Alert
+from procmond.models.alert import Alert
 
 
-def detect_process_without_exe():
+def detect_process_without_exe() -> list[Alert]:
+    """Checks for processes with no corresponding executables on disk.
+
+    :return: A List of Alerts for each process that has no associated executable.
     """
-    Checks for processes with no corresponding executables on disk
-    :rtype: List[Alert]
-    :return: A List of Alerts for each process that has no associated executable
-    """
-    # import config lazily to avoid circular import when procmond initializes
-    from procmond import config
+    # import config lazily to avoid circular import when daemon initializes
+    from procmond.daemon import config  # noqa: PLC0415
 
     result = []
     with connect(config.database_path) as conn:
@@ -39,7 +35,7 @@ def detect_process_without_exe():
                 """
         cur.execute(sql)
         for record in cur:
-            pid, updated_at, name, file_path, file_exists = record
+            pid, _updated_at, name, file_path, _file_exists = record
             alert = Alert(
                 pid=pid,
                 name=name,
@@ -50,17 +46,16 @@ def detect_process_without_exe():
     return result
 
 
-def detect_process_with_duplicate_name():
-    """
-    Checks for two processes that share the same name, but are in different locations on disk.
+def detect_process_with_duplicate_name() -> list[Alert]:
+    """Checks for two processes that share the same name, but are in different locations on disk.
 
-    NOTE: This could cause false-positives if two different apps contain the same helper executable (i.e. JetBrain's
-    fsnotifier)
-    :rtype: List[Alert]
-    :return: A List of Alerts for each process that has no associated executable
+    NOTE: This could cause false-positives if two different apps contain the same
+    helper executable (i.e. JetBrain's fsnotifier)
+
+    :return: A List of Alerts for each process that has no associated executable.
     """
-    # import config lazily to avoid circular import when procmond initializes
-    from procmond import config
+    # import config lazily to avoid circular import when daemon initializes
+    from procmond.daemon import config  # noqa: PLC0415
 
     result = []
     with connect(config.database_path) as conn:
@@ -81,25 +76,24 @@ def detect_process_with_duplicate_name():
                 """
         cur.execute(sql)
         for record in cur:
-            pid, updated_at, name, file_path, distinct_paths = record
+            pid, _updated_at, name, file_path, distinct_paths = record
             alert = Alert(
                 pid=pid,
                 name=name,
                 path=file_path,
-                message=f"{distinct_paths} processes exist with the same name, but different paths.",
+                message=(f"{distinct_paths} processes exist with the same name, but different paths."),
             )
             result.append(alert)
     return result
 
 
-def detect_process_with_hash_change():
+def detect_process_with_hash_change() -> list[Alert]:
+    """Checks for processes where the executable on disk has changed while the process is running.
+
+    :return: A List of Alerts for each process that has no associated executable.
     """
-    Checks for processes where the executable on disk has changed while the process is running
-    :rtype: List[Alert]
-    :return: A List of Alerts for each process that has no associated executable
-    """
-    # import config lazily to avoid circular import when procmond initializes
-    from procmond import config
+    # import config lazily to avoid circular import when daemon initializes
+    from procmond.daemon import config  # noqa: PLC0415
 
     result = []
     with connect(config.database_path) as conn:
@@ -121,12 +115,12 @@ def detect_process_with_hash_change():
                 """
         cur.execute(sql)
         for record in cur:
-            pid, updated_at, name, file_path, file_exists = record
+            pid, _updated_at, name, file_path, _file_exists = record
             alert = Alert(
                 pid=pid,
                 name=name,
                 path=file_path,
-                message="Process executable has been modified on disk while the process was running.",
+                message=("Process executable has been modified on disk while the process was running."),
             )
             result.append(alert)
     return result
