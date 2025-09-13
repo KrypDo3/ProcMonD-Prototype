@@ -1,0 +1,30 @@
+---
+alwaysApply: true
+---
+
+# ProcMonD Project Structure
+
+This is a process monitoring daemon that detects suspicious process behavior. The main entry point is [procmond.py](mdc:procmond.py).
+
+## Core Architecture
+
+- **Main Entry**: [procmond.py](mdc:procmond.py) - Daemon main loop and process collection
+- **Configuration**: [ConfigManager.py](mdc:ConfigManager.py) - Handles INI config file parsing and defaults
+- **Detection Logic**: [Detectors.py](mdc:Detectors.py) - Contains all suspicious behavior detection algorithms
+- **Data Types**: [AppDataTypes/](mdc:AppDataTypes/) - Core data structures (ProcessRecord, Alert)
+- **Alert Handlers**: [AlertHandlers/](mdc:AlertHandlers/) - Output mechanisms (Email, Syslog, Webhook)
+
+## Key Patterns
+
+- **Lazy Imports**: Use lazy imports to avoid circular dependencies (see Detectors.py pattern)
+- **Database Operations**: All database access uses context managers with SQLite3
+- **Error Handling**: Graceful degradation for platform-specific features (daemon context)
+- **Configuration**: Centralized config with sensible defaults and INI file override
+- **Logging**: Structured logging with configurable levels and formats
+
+## File Organization
+
+- Keep detection logic in [Detectors.py](mdc:Detectors.py)
+- Add new alert handlers in [AlertHandlers/](mdc:AlertHandlers/)
+- Data model changes go in [AppDataTypes/](mdc:AppDataTypes/)
+- Tests mirror the source structure in [tests/](mdc:tests/)
