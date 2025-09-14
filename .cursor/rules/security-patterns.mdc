@@ -1,0 +1,85 @@
+---
+description: Security and process monitoring patterns
+---
+
+# Security and Process Monitoring Patterns
+
+## Process Monitoring
+
+- Always validate process data before processing
+- Handle `AccessDenied`, `ZombieProcess`, and `FileNotFoundError` exceptions
+- Use the `ProcessRecord.valid` flag to track process validity
+- Example from [procmond.py](mdc:procmond.py):
+
+  ```python
+  try:
+      proc.name = process.name()
+      proc.ppid = process.ppid()
+      proc.path = process.exe()
+  except AccessDenied:
+      warning(f"{proc} is not an accessible process.")
+      proc.valid = False
+  ```
+
+## File System Security
+
+- Always check file existence before operations
+- Use proper error handling for permission issues
+- Hash files safely with configurable buffer sizes
+- Example from [ProcessRecord.py](mdc:AppDataTypes/ProcessRecord.py):
+
+  ```python
+  try:
+      with open(self.path, "rb") as f:
+          hasher = sha256()
+          r = f.read(_buf)
+          while r:
+              hasher.update(r)
+              r = f.read(_buf)
+  except PermissionError:
+      warning(f"{self.name} ({self.pid}) executable file exists, but we don't have access.")
+  ```
+
+## Database Security
+
+- Use parameterized queries to prevent SQL injection
+- Validate all input data before database operations
+- Use proper indexing for performance on large datasets
+- Example from [procmond.py](mdc:procmond.py):
+
+  ```python
+  cur.execute(insert_sql, (p.pid, p.ppid, timestamp, p.name, p.path, p.valid, p.hash, p.accessible, p.exists))
+  ```
+
+## Alert Handling
+
+- Sanitize alert data before sending to external systems
+- Use secure connections for email and webhook alerts
+- Log all alert actions for audit trails
+- Example from [EmailAlertHandler.py](mdc:AlertHandlers/EmailAlertHandler.py):
+
+  ```python
+  if config.email_config["smtp_server_use_ssl"]:
+      s = SMTP_SSL(host=config.email_config["smtp_server_address"], port=config.email_config["smtp_server_port"])
+  ```
+
+## Configuration Security
+
+- Use secure defaults for all configuration options
+- Validate configuration values at startup
+- Don't log sensitive information (passwords, keys)
+- Example from [ConfigManager.py](mdc:ConfigManager.py):
+
+  ```python
+  self.email_config["smtp_server_password"] = email_section.get("SMTPServerPassword", "")
+  ```
+
+## Detection Algorithms
+
+- Implement detection logic in [Detectors.py](mdc:Detectors.py)
+- Use SQL queries for efficient detection across time periods
+- Consider false positive rates in detection logic
+- Example detection patterns:
+  - Processes without executables on disk
+  - Processes with hash changes while running
+  - Duplicate process names in different locations

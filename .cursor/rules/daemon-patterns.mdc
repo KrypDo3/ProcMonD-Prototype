@@ -1,0 +1,92 @@
+---
+description: Daemon and service patterns
+---
+
+# Daemon and Service Patterns
+
+## Daemon Context
+
+- Use the `DaemonContext` for proper daemonization on Unix systems
+- Provide fallback implementation for non-Unix platforms (Windows)
+- Example from [procmond.py](mdc:procmond.py):
+
+  ```python
+  try:
+      from daemon import DaemonContext
+  except Exception:
+      class DaemonContext:
+          def __init__(self):
+              self.detach_process = False
+  ```
+
+## Main Loop
+
+- Implement the main monitoring loop in the `main()` function
+- Use configurable sleep intervals between checks
+- Handle graceful shutdown with KeyboardInterrupt
+- Example pattern:
+
+  ```python
+  while True:
+      debug("Performing process checks.")
+      process_records = get_processes()
+      store_records(process_records)
+      alerts = check_alerts()
+      if alerts:
+          action_alerts(alerts)
+      sleep(config.refresh_rate)
+  ```
+
+## Logging
+
+- Use structured logging with configurable levels
+- Log startup information and configuration
+- Use appropriate log levels (debug, info, warning, error, fatal)
+- Example from [procmond.py](mdc:procmond.py):
+
+  ```python
+  basicConfig(
+      format=config.log_message_format,
+      datefmt=config.log_message_datefmt,
+      level=config.numeric_log_level,
+  )
+  ```
+
+## Configuration Management
+
+- Load configuration from INI files with sensible defaults
+- Support command-line overrides for configuration files
+- Use `ExtendedInterpolation` for configuration value substitution
+- Example from [ConfigManager.py](mdc:ConfigManager.py):
+
+  ```python
+  config = ConfigParser(interpolation=ExtendedInterpolation())
+  config.read(config_locations)
+  ```
+
+## Error Handling
+
+- Handle database connection errors gracefully
+- Log fatal errors and exit cleanly
+- Use proper exception handling for external dependencies
+- Example pattern:
+
+  ```python
+  except OperationalError:
+      fatal(f"Cannot write to database file {config.database_path}")
+      daemon_ctx.close()
+      quit(-1)
+  ```
+
+## Process Collection
+
+- Use `psutil.process_iter()` for cross-platform process enumeration
+- Handle various process states and access permissions
+- Validate process data before storing
+- Example from [procmond.py](mdc:procmond.py):
+
+  ```python
+  for process in process_iter():
+      proc = ProcessRecord(process.pid)
+      # ... process validation and data collection
+  ```
