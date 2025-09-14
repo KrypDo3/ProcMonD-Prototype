@@ -1,63 +1,62 @@
 # Copilot / AI agent instructions for ProcMonD-Prototype
 
-Purpose: Give AI coding agents the essential, project-specific knowledge needed to be immediately productive.
 
-Quick start (dev machine: Windows PowerShell):
+# Essential Guide for AI Coding Agents
 
-```powershell
-& .\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-# single-run smoke harness (does not start daemon loop)
-python run_smoke.py
-# run full tests
-python -m pytest -q
-```
+## Architecture & Major Components
+ProcMonD-Prototype is a cross-platform process monitoring daemon. It inspects running processes for compromise, records metadata to SQLite, and delivers alerts via syslog, email (SMTP), or HTTP webhook. The codebase is modular:
 
-Big picture (core components):
+- **Entrypoint:** `procmond.py` (legacy), `src/procmond/cli.py` (CLI), `src/procmond/daemon.py` (daemon loop)
+- **Config:** `src/procmond/core/config_manager.py` loads INI config and CLI flags, using `parse_known_args()` to avoid test collisions
+- **Detectors:** `src/procmond/core/detectors.py` implements SQL-based detection functions (pure transformers: SQL → Alert)
+- **Models:** `src/procmond/models/process_record.py` and `alert.py` define core data shapes; `ProcessRecord` handles file existence and hashing
+- **Alert Handlers:** `src/procmond/handlers/` (email, syslog, webhook) provide pluggable delivery, with platform-safe fallbacks
+- **Database:** SQLite (`procmond.db`) stores process snapshots; detectors query latest state
 
-- `procmond.py` — application entrypoint. Contains process collection, DB writes, detector invocation, and daemon startup. On Unix this uses `python-daemon`; on Windows there is a no-op fallback to allow local dev.
-- `ConfigManager.py` — central config loader for INI files and CLI flags. Note: code uses `parse_known_args()` to avoid pytest arg collisions.
-- `Detectors.py` — detectors are implemented as functions that run SQL queries against the latest snapshot in the SQLite DB (`procmond.db`) and return `AppDataTypes.Alert` instances. Keep imports lazy (inside the detector function) to avoid circular imports.
-- `AppDataTypes/ProcessRecord.py` & `AppDataTypes/Alert.py` — data classes used across the project. `ProcessRecord` handles file existence and hashing; it reads `hash_buffer_size` from runtime config (lazy access).
-- `AlertHandlers/` — delivery adapters: `EmailAlertHandler.py`, `SyslogAlertHandler.py`, `WebHookAlertHandler.py`. `WebHookAlertHandler` uses `requests.post`; `SyslogAlertHandler` includes a Windows-friendly logging fallback when `syslog` is unavailable.
-- `procmond.db` — SQLite DB storing snapshots used by detectors. Tests create temporary DBs and monkeypatch `ConfigManager` to point `database_path` at them.
+## Developer Workflows
+- **Setup:**
+  - Activate venv: `source .venv/bin/activate` (macOS/Linux) or `& .\.venv\Scripts\Activate.ps1` (Windows)
+  - Install deps: `pip install -r requirements.txt`
+- **Smoke test:** `python scripts/run_smoke.py` (single-run, prints sample alerts)
+- **Run full tests:** `python -m pytest -q` (tests auto-create temp DBs, monkeypatch config)
+- **Lint/format:** `ruff format` and `ruff check` (see `pyproject.toml`)
+- **Type check:** `mypy .` (if configured)
+- **Monitor DB/logs:** `ls -la procmond.db procmond.log`
 
-Project-specific conventions and important patterns:
+## Project-Specific Patterns & Conventions
+- **Lazy imports:** Place platform-specific imports (e.g., `pwd`, `syslog`, `daemon`) inside functions to avoid Windows import errors
+- **Config access:** Always use `ConfigManager` for runtime config; detectors import config inside functions to avoid circular imports
+- **Detectors:** Write as pure functions returning `Alert` objects; use SQL queries against latest DB snapshot
+- **Hashing:** `ProcessRecord.hash()` reads buffer size from config at runtime; preserve default fallback
+- **Alert delivery:** Handlers use platform guards and allow injection/mocking for tests
+- **Testing:** Prefer synthetic DB rows over deep mocking of `psutil`; tests monkeypatch config paths
+- **Paths:** Default DB/log paths are repo root; respect config overrides for tests/CI
 
-- Avoid import-time work that triggers platform-specific imports. Many modules use lazy imports (import inside functions) to prevent POSIX-only modules (e.g., `pwd`, `syslog`) from breaking Windows development.
-- Tests run under `pytest`; code must tolerate unknown CLI args. `ConfigManager` uses `parse_known_args()` to avoid `SystemExit` in test runs.
-- Detectors are SQL-centric: they assume a snapshot schema; write detectors as pure functions returning `Alert` objects. Example: `Detectors.detect_process_without_exe()` executes SQL and builds `AppDataTypes.Alert` on matches.
-- Hashing: `ProcessRecord.hash()` reads `hash_buffer_size` from `procmond.config` at runtime. When editing hashing logic, preserve the default fallback buffer value to avoid breaking tests.
-- DB and logging paths: defaults are `procmond.db` and `procmond.log` in repo root; respect `ConfigManager` overrides for tests and CI.
+## Integration Points
+- **psutil:** Used for process enumeration; avoid heavy mocking
+- **requests:** Used by webhook handler; keep network calls simple
+- **python-daemon:** Used for Unix daemonization; import inside function with fallback
+- **SMTP:** Email delivery; treat as integration, prefer mocking in tests
 
-Integration points / external deps to be mindful of:
+## Key Files & Directories
+- `src/procmond/cli.py`, `daemon.py` — main logic
+- `src/procmond/core/config_manager.py` — config loader
+- `src/procmond/core/detectors.py` — detection logic
+- `src/procmond/models/process_record.py`, `alert.py` — data models
+- `src/procmond/handlers/` — alert delivery
+- `scripts/run_smoke.py` — quick test harness
+- `tests/` — unit tests, DB monkeypatching
 
-- `psutil` — process enumeration. Avoid heavy mocking; tests frequently create synthetic rows instead of mocking `psutil` deep internals.
-- `requests` — used by `WebHookAlertHandler`. Keep network calls simple and allow injection/monkeypatching in tests.
-- `python-daemon` — used for Unix daemonization. Do not import at module top-level if you want cross-platform behavior; use a try/except with a safe fallback as in `procmond.py`.
-- Email delivery uses SMTP in `EmailAlertHandler`; treat mail delivery as integration work and prefer mocking in tests.
+## Style & Linting
+- Python 3.10+ with type annotations
+- Use `from __future__ import annotations` for forward refs
+- Line length: 100 (see `pyproject.toml`)
+- Prefer explicit types for public APIs and dataclasses
+- Use `Path` for filesystem paths in signatures
+- See `pyproject.toml` for ruff config
 
-Developer workflows (commands & tips):
-
-- Activate venv in PowerShell: `& .\.venv\Scripts\Activate.ps1`.
-- Run smoke harness: `python run_smoke.py` — quick single-run that collects processes, writes to DB, and prints sample alerts.
-- Run unit tests: `python -m pytest -q`. Tests assume you use the venv.
-- When updating dependencies: update `requirements.txt` (conservative ranges) and regenerate `requirements.lock` using `pip freeze > requirements.lock` in the venv.
-- DO NOT run syntactic mass-upgrade tools (e.g. `pyupgrade`) against the venv directory — exclude `.venv` to avoid rewriting site-packages.
-
-Debugging hints specific to this repo:
-
-- Import-time failures on Windows are often due to POSIX imports (`pwd`, `syslog`, `daemon`). Look for those imports and prefer lazy import or platform guards.
-- Circular imports between `procmond`, `Detectors`, and `ProcessRecord` were solved here by moving config access and some imports inside functions. If you add cross-module references, prefer `from . import X` inside functions and use `sys.modules` fallbacks only when necessary.
-- DB issues: tests create temporary DBs and set `ConfigManager.database_path`. Use the same approach when writing test fixtures.
-
-Files to read first (high signal):
-
-- `procmond.py` — entrypoint and main process logic
-- `Detectors.py` — shows detector pattern and SQL usage
-- `AppDataTypes/ProcessRecord.py` and `AppDataTypes/Alert.py` — core data shapes
-- `AlertHandlers/` — examples of external interaction (requests, syslog, SMTP)
-- `ConfigManager.py` — config knobs used across the app
+---
+If any section is unclear or missing, please provide feedback so this guide can be further refined for AI agent productivity.
 - `run_smoke.py` and `tests/` — quick examples of how the project is exercised in CI/local runs
 
 When submitting patches or PRs:
@@ -103,11 +102,4 @@ exclude = "(.venv|procmond.db|procmond.log)"
 - Why these rules matter for this repo:
   - The code uses small, testable transformers (detectors) that benefit from type-driven refactors.
   - Lazy imports and platform guards make some runtime shapes dynamic; explicit typing documents expected types and reduces accidental API breakage.
-
-If you'd like, I can also:
-
-- create a `pyproject.toml` with the ruff config above,
-- add a `.github/workflows/ci.yml` that runs `ruff check`, `python -m pytest -q`, and `mypy` (optional),
-- or run ruff across the repo and open a PR with automatic fixes.
-
-If you prefer a different line length or stricter/looser ruff rule set, tell me the preferred values and I'll update the doc and config.
+    - The codebase is cross-platform and may run in constrained environments; type annotations help catch issues early.
